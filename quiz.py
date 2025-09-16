@@ -2,6 +2,8 @@ import json
 import random
 import os
 import time
+import threading
+import sys
 from datetime import datetime
 
 # Файлы
@@ -12,6 +14,9 @@ RESULTS_FILE = "results.txt"
 EXAM_TIME = 3600          # 1 час = 3600 секунд
 EXAM_QUESTIONS = 45       # количество вопросов в экзамене
 EXAM_PASS_SCORE = 38      # порог сдачи
+
+stop_timer = False  # глобальный флаг для остановки таймера
+time_string = ""    # глобальная строка для текущего времени
 
 def load_questions(filename=QUESTIONS_FILE):
     """Загрузка вопросов из JSON"""
@@ -30,13 +35,45 @@ def save_result(score, total, exam_mode, passed=None):
         status = f" | СДАН ✅" if passed else (f" | НЕ СДАН ❌" if exam_mode else "")
         f.write(f"{timestamp} | {mode} | {score}/{total} ({percent:.1f}%) {status}\n")
 
-def ask_question(q):
+def format_time(seconds_left):
+    """Форматирование секунд в ЧЧ:ММ:СС"""
+    h = seconds_left // 3600
+    m = (seconds_left % 3600) // 60
+    s = seconds_left % 60
+    return f"{h:02}:{m:02}:{s:02}"
+
+def progress_bar(current, total, length=30):
+    """Рисует прогресс-бар"""
+    percent = current / total
+    filled = int(length * percent)
+    bar = "█" * filled + "-" * (length - filled)
+    return f"[{bar}] {current}/{total}"
+
+def timer_thread(start_time):
+    """Фоновый поток для обновления строки времени"""
+    global stop_timer, time_string
+    while not stop_timer:
+        elapsed = int(time.time() - start_time)
+        remaining = max(0, EXAM_TIME - elapsed)
+        time_string = f"⏳ Осталось времени: {format_time(remaining)}"
+        if remaining <= 0:
+            break
+        time.sleep(1)
+
+def clear_screen():
+    """Очищает консоль (кроссплатформенно)"""
+    os.system("cls" if os.name == "nt" else "clear")
+
+def ask_question(q, current, total):
     """Задает вопрос пользователю и возвращает True/False"""
-    print(f"\n{q['question']}")
+    clear_screen()
+    print(time_string)  # время сверху
+    print(f"\nВопрос {current}/{total}:")
+    print(q['question'])
     for idx, option in enumerate(q['options']):
         print(f"   {idx}) {option}")
 
-    answer = input("Ваш ответ (через запятую, если несколько): ").strip()
+    answer = input("\nВаш ответ (через запятую, если несколько): ").strip()
     try:
         user_choices = [int(x.strip()) for x in answer.split(",") if x.strip()]
     except ValueError:
@@ -57,13 +94,17 @@ def training_mode(questions):
     random.shuffle(queue)
     score = 0
     total = len(queue)
+    answered = 0
 
     while queue:
         q = queue.pop(0)
-        if ask_question(q):
+        if ask_question(q, answered + 1, total):
             score += 1
         else:
             queue.append(q)  # возвращаем вопрос в конец очереди
+        answered += 1
+        print("\n" + progress_bar(answered, total))
+        input("Нажмите Enter для продолжения...")
 
     print("\n==== Итог (Тренировка) ====")
     print(f"Правильных: {score} из {total}")
@@ -72,19 +113,31 @@ def training_mode(questions):
 
 def exam_mode(questions):
     """Режим экзамена — 45 вопросов, 1 час"""
+    global stop_timer, time_string
     selected = random.sample(questions, min(EXAM_QUESTIONS, len(questions)))
     score = 0
     total = len(selected)
 
     start_time = time.time()
+    stop_timer = False
+    timer = threading.Thread(target=timer_thread, args=(start_time,), daemon=True)
+    timer.start()
+
     for i, q in enumerate(selected, 1):
-        if (time.time() - start_time) > EXAM_TIME:
+        elapsed = int(time.time() - start_time)
+        if elapsed > EXAM_TIME:
+            clear_screen()
             print("\n⏰ Время вышло!")
             break
 
-        print(f"\nВопрос {i}/{total}:")
-        if ask_question(q):
+        if ask_question(q, i, total):
             score += 1
+
+        print("\n" + progress_bar(i, total))
+        input("Нажмите Enter для продолжения...")
+
+    stop_timer = True
+    timer.join()
 
     print("\n==== Итог (Экзамен) ====")
     print(f"Правильных: {score} из {total}")
