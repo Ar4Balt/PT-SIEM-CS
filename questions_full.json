@@ -885,18 +885,23 @@
   {
     "question": "Расположите действия в порядке обработки событий системой MaxPatrol SIEM",
     "options": [
-      "Агрегация(2)",
-      "Корреляция(4)",
-      "Нормализация(1)",
-      "Обогащение(3)"
+      "Агрегация",
+      "Корреляция;",
+      "Нормализация;",
+      "Обогащение"
     ],
-    "correct": []
+    "correct": [
+      2,
+      0,
+      3,
+      1
+    ]
   },
   {
     "question": "В каком приложении находится роль Sq|Storage?",
     "options": [
-      "Managment and Configuration",
-      "Knowledge Base",
+      "Managment and Configuration;",
+      "Knowledge Base;",
       "MaxPatrol 10"
     ],
     "correct": [
@@ -906,8 +911,8 @@
   {
     "question": "В каком приложении находится роль RMQ Message Bus?",
     "options": [
-      "MaxPatrol 10",
-      "Managment and Configuration",
+      "MaxPatrol 10;",
+      "Managment and Configuration;",
       "Knowledge Base"
     ],
     "correct": [
