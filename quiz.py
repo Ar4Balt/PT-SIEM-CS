@@ -15,8 +15,8 @@ EXAM_TIME = 3600          # 1 час = 3600 секунд
 EXAM_QUESTIONS = 45       # количество вопросов в экзамене
 EXAM_PASS_SCORE = 34      # порог сдачи
 
-stop_timer = False  # глобальный флаг для остановки таймера
-time_string = ""    # глобальная строка для текущего времени
+stop_timer = False
+time_string = ""
 
 def load_questions(filename=QUESTIONS_FILE):
     """Загрузка вопросов из JSON"""
