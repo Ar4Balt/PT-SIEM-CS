@@ -5,6 +5,9 @@ import time
 import threading
 import sys
 from datetime import datetime
+import urllib.request
+import urllib.error
+from pathlib import Path
 
 # Файлы
 COURSES_DIR = "courses"
@@ -17,6 +20,40 @@ EXAM_PASS_SCORE = 38      # порог сдачи
 
 stop_timer = False
 time_string = ""
+
+GITHUB_REPO = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
+FILES_TO_CHECK = [
+    "quiz.py",
+    "README.md"
+]
+
+def check_updates():
+    """Проверяем обновления с GitHub"""
+    print("🔍 Проверка обновлений...")
+
+    for file in FILES_TO_CHECK:
+        local_path = Path(file)
+        url = GITHUB_REPO + file
+
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                remote_content = response.read().decode("utf-8")
+
+            local_content = ""
+            if local_path.exists():
+                with open(local_path, "r", encoding="utf-8") as f:
+                    local_content = f.read()
+
+            if local_content != remote_content:
+                with open(local_path, "w", encoding="utf-8") as f:
+                    f.write(remote_content)
+                print(f"⬆️ Файл {file} обновлён!")
+            else:
+                print(f"✔️ {file} актуален")
+
+        except urllib.error.URLError:
+            print("⚠️ Не удалось подключиться к GitHub. Работаем офлайн.")
+            return
 
 def list_courses():
     """Сканируем папку с курсами"""
@@ -175,6 +212,7 @@ def exam_mode(course, questions):
     save_result(course, score, total, exam_mode=True, passed=passed)
 
 if __name__ == "__main__":
+    check_updates()
     course = choose_course()
     if not course:
         exit()
