@@ -651,12 +651,12 @@
   {
     "question": "В поле object.value могут размещаться числа в диапазоне от 1 до 65535. Какое выражение на языке PDQL найдет все события где object.value > 1023?",
     "options": [
-      "value >= 1024",
-      "value startswith 1024",
-      "value startsfrom 1024",
-      "value match \"10([3-9][0-9]|2[4-9])|[2-9][0-91{3}|[1-9][0-91<4,}\"",
-      "num_value > 1023",
-      "value > 1023",
+      "object.value >= 1024",
+      "object.value startswith 1024",
+      "object.value startsfrom 1024",
+      "object.value match \"10([3-9][0-9]|2[4-9])|[2-9][0-91{3}|[1-9][0-91<4,}\"",
+      "object.num_value > 1023",
+      "object.value > 1023",
       "match(object.value,\"10([3-9][0-9]|2[4-9])|[2-9][0-9]{3}|[1-9][0-9]{4,}\")"
     ],
     "correct": [
