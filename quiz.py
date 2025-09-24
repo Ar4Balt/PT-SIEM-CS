@@ -7,33 +7,56 @@ import sys
 from datetime import datetime
 
 # Файлы
-QUESTIONS_FILE = "questions_full.json"
+COURSES_DIR = "courses"
 RESULTS_FILE = "results.txt"
 
 # Настройки экзамена
 EXAM_TIME = 3600          # 1 час = 3600 секунд
 EXAM_QUESTIONS = 45       # количество вопросов в экзамене
-EXAM_PASS_SCORE = 34      # порог сдачи
+EXAM_PASS_SCORE = 38      # порог сдачи
 
 stop_timer = False
 time_string = ""
 
-def load_questions(filename=QUESTIONS_FILE):
-    """Загрузка вопросов из JSON"""
-    if not os.path.exists(filename):
-        print(f"Файл {filename} не найден!")
+def list_courses():
+    """Сканируем папку с курсами"""
+    if not os.path.exists(COURSES_DIR):
+        print(f"❌ Папка {COURSES_DIR} не найдена!")
         return []
-    with open(filename, "r", encoding="utf-8") as f:
+    return [d for d in os.listdir(COURSES_DIR) if os.path.isdir(os.path.join(COURSES_DIR, d))]
+
+def choose_course():
+    """Выбор курса"""
+    courses = list_courses()
+    if not courses:
+        print("Нет доступных курсов.")
+        return None
+    print("\n📚 Доступные курсы:")
+    for i, course in enumerate(courses, 1):
+        print(f"{i}) {course}")
+    while True:
+        choice = input("Выберите курс: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(courses):
+            return courses[int(choice) - 1]
+        print("⚠️ Неверный ввод, попробуйте снова.")
+
+def load_questions(course):
+    """Загрузка вопросов из выбранного курса"""
+    file_path = os.path.join(COURSES_DIR, course, "questions.json")
+    if not os.path.exists(file_path):
+        print(f"❌ Файл {file_path} не найден!")
+        return []
+    with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_result(score, total, exam_mode, passed=None):
+def save_result(course, score, total, exam_mode, passed=None):
     """Сохраняем результат в файл"""
     with open(RESULTS_FILE, "a", encoding="utf-8") as f:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         mode = "Экзамен" if exam_mode else "Тренировка"
         percent = (score / total * 100) if total > 0 else 0
         status = f" | СДАН ✅" if passed else (f" | НЕ СДАН ❌" if exam_mode else "")
-        f.write(f"{timestamp} | {mode} | {score}/{total} ({percent:.1f}%) {status}\n")
+        f.write(f"{timestamp} | {course} | {mode} | {score}/{total} ({percent:.1f}%) {status}\n")
 
 def format_time(seconds_left):
     """Форматирование секунд в ЧЧ:ММ:СС"""
@@ -61,13 +84,13 @@ def timer_thread(start_time):
         time.sleep(1)
 
 def clear_screen():
-    """Очищает консоль (кроссплатформенно)"""
+    """Очищает консоль"""
     os.system("cls" if os.name == "nt" else "clear")
 
 def ask_question(q, current, total):
-    """Задает вопрос пользователю и возвращает True/False"""
+    """Задает вопрос пользователю"""
     clear_screen()
-    print(time_string)  # время сверху
+    print(time_string)
     print(f"\nВопрос {current}/{total}:")
     print(q['question'])
     for idx, option in enumerate(q['options']):
@@ -88,8 +111,8 @@ def ask_question(q, current, total):
         print(f"❌ Неверно. Правильный ответ: {', '.join(correct_answers)}")
         return False
 
-def training_mode(questions):
-    """Режим тренировки без времени. Ошибочные вопросы повторяются."""
+def training_mode(course, questions):
+    """Режим тренировки"""
     queue = questions.copy()
     random.shuffle(queue)
     score = 0
@@ -101,18 +124,17 @@ def training_mode(questions):
         if ask_question(q, answered + 1, total):
             score += 1
         else:
-            queue.append(q)  # возвращаем вопрос в конец очереди
+            queue.append(q)
         answered += 1
         print("\n" + progress_bar(answered, total))
         input("Нажмите Enter для продолжения...")
 
     print("\n==== Итог (Тренировка) ====")
     print(f"Правильных: {score} из {total}")
-    print("🎯 Все вопросы были пройдены!")
-    save_result(score, total, exam_mode=False)
+    save_result(course, score, total, exam_mode=False)
 
-def exam_mode(questions):
-    """Режим экзамена — 45 вопросов, 1 час"""
+def exam_mode(course, questions):
+    """Режим экзамена"""
     global stop_timer, time_string
     selected = random.sample(questions, min(EXAM_QUESTIONS, len(questions)))
     score = 0
@@ -150,17 +172,21 @@ def exam_mode(questions):
     else:
         print("❌ Экзамен НЕ СДАН!")
 
-    save_result(score, total, exam_mode=True, passed=passed)
+    save_result(course, score, total, exam_mode=True, passed=passed)
 
 if __name__ == "__main__":
-    questions = load_questions()
+    course = choose_course()
+    if not course:
+        exit()
+
+    questions = load_questions(course)
     if not questions:
         exit()
 
-    print("📘 Тренажёр для подготовки к экзамену PT-SIEM-CS")
+    print(f"\n📘 Тренажёр для подготовки: {course}")
     mode = input("Выберите режим (1 - тренировка, 2 - экзамен): ").strip()
 
     if mode == "2":
-        exam_mode(questions)
+        exam_mode(course, questions)
     else:
-        training_mode(questions)
+        training_mode(course, questions)
