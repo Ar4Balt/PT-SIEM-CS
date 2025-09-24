@@ -7,8 +7,9 @@ import sys
 from datetime import datetime
 import urllib.request
 import urllib.error
+import hashlib
+import json
 from pathlib import Path
-
 # Файлы
 COURSES_DIR = "courses"
 RESULTS_FILE = "results.txt"
@@ -21,40 +22,96 @@ EXAM_PASS_SCORE = 34      # порог сдачи
 stop_timer = False
 time_string = ""
 
-GITHUB_REPO = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
+# GitHub-репозиторий (ветка main)
+GITHUB_API = "https://api.github.com/repos/Ar4Balt/PT-SIEM-CS/contents/"
+GITHUB_RAW = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
+
 FILES_TO_CHECK = [
     "quiz.py",
-    "README.md",
-    "courses"
+    "README.md"
 ]
 
+def md5(content: str) -> str:
+    """Вычисляет md5-хэш строки"""
+    return hashlib.md5(content.encode("utf-8")).hexdigest()
+
+def download_file(url, local_path):
+    """Скачивает файл с GitHub"""
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = response.read().decode("utf-8")
+        Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(local_path, "w", encoding="utf-8") as f:
+            f.write(data)
+        print(f"⬆️ Обновлён: {local_path}")
+    except Exception as e:
+        print(f"⚠️ Ошибка загрузки {url}: {e}")
+
+def check_and_update_file(file):
+    """Сравнивает локальный и удалённый файл, при различии обновляет"""
+    url = GITHUB_RAW + file
+    local_path = Path(file)
+
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            remote_content = response.read().decode("utf-8")
+    except urllib.error.URLError:
+        print("⚠️ Не удалось подключиться к GitHub. Работаем офлайн.")
+        return
+
+    local_content = ""
+    if local_path.exists():
+        with open(local_path, "r", encoding="utf-8") as f:
+            local_content = f.read()
+
+    if md5(local_content) != md5(remote_content):
+        download_file(url, local_path)
+    else:
+        print(f"✔️ Актуален: {file}")
+
+def update_courses():
+    """Скачивает и обновляет все файлы из папки courses/"""
+    try:
+        with urllib.request.urlopen(GITHUB_API + "courses", timeout=5) as response:
+            files = json.loads(response.read().decode("utf-8"))
+    except urllib.error.URLError:
+        print("⚠️ Не удалось проверить курсы. Работаем офлайн.")
+        return
+
+    for item in files:
+        if item["type"] == "dir":
+            # заходим внутрь подпапок
+            with urllib.request.urlopen(item["url"], timeout=5) as response:
+                subfiles = json.loads(response.read().decode("utf-8"))
+            for sf in subfiles:
+                if sf["type"] == "file":
+                    rel_path = f"courses/{Path(sf['path']).name}"
+                    url = sf["download_url"]
+                    local_path = Path(sf["path"])
+                    try:
+                        with urllib.request.urlopen(url, timeout=5) as r:
+                            remote_content = r.read().decode("utf-8")
+                        local_content = ""
+                        if local_path.exists():
+                            with open(local_path, "r", encoding="utf-8") as f:
+                                local_content = f.read()
+                        if md5(local_content) != md5(remote_content):
+                            download_file(url, local_path)
+                        else:
+                            print(f"✔️ Актуален: {local_path}")
+                    except Exception as e:
+                        print(f"⚠️ Ошибка загрузки {url}: {e}")
+
 def check_updates():
-    """Проверяем обновления с GitHub"""
+    """Проверяем и обновляем все файлы проекта"""
     print("🔍 Проверка обновлений...")
 
+    # основные файлы
     for file in FILES_TO_CHECK:
-        local_path = Path(file)
-        url = GITHUB_REPO + file
+        check_and_update_file(file)
 
-        try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                remote_content = response.read().decode("utf-8")
-
-            local_content = ""
-            if local_path.exists():
-                with open(local_path, "r", encoding="utf-8") as f:
-                    local_content = f.read()
-
-            if local_content != remote_content:
-                with open(local_path, "w", encoding="utf-8") as f:
-                    f.write(remote_content)
-                print(f"⬆️ Файл {file} обновлён!")
-            else:
-                print(f"✔️ {file} актуален")
-
-        except urllib.error.URLError:
-            print("⚠️ Не удалось подключиться к GitHub. Работаем офлайн.")
-            return
+    # курсы
+    update_courses()
 
 def list_courses():
     """Сканируем папку с курсами"""
