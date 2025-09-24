@@ -3,7 +3,7 @@
 Интерактивная программа для самоподготовки к различным сертификациям Positive Technologies.  
 Поддерживаются несколько направлений, например:
 - PT-SIEM-CS
-- PT-EDR-CS
+- PT-EDR-CS           
 и другие (можно добавлять свои).
 
 В дальнейшем будут добавляться новые
@@ -44,13 +44,17 @@
 
 ## 📂 Структура проекта
 
-├── courses/               
-│├── PT-SIEM-CS/questions.json                       
-│├── PT-MP-CS/questions.json                           
-│└── PT-EDR-CS/questions.json 
-├── quiz.py # Основная программа 
-├── results.txt # История ваших попыток 
-└── README.md # Этот файл 
+~~~
+.  
+├── README.md
+├── courses
+│   ├── PT-EDR-CS
+│   │   └── questions.json
+│   └── PT-SIEM-CS
+│       └── questions.json
+├── quiz.py
+└── results.txt                     
+~~~
 
 ## ⚡ Установка и запуск
 1. Установите Python 3.8+  

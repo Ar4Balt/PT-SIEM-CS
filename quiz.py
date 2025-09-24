@@ -24,7 +24,8 @@ time_string = ""
 GITHUB_REPO = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
 FILES_TO_CHECK = [
     "quiz.py",
-    "README.md"
+    "README.md",
+    "courses"
 ]
 
 def check_updates():
