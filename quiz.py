@@ -10,6 +10,7 @@ import urllib.error
 import hashlib
 import json
 from pathlib import Path
+
 # Файлы
 COURSES_DIR = "courses"
 RESULTS_FILE = "results.txt"
