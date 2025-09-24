@@ -16,7 +16,7 @@ RESULTS_FILE = "results.txt"
 # Настройки экзамена
 EXAM_TIME = 3600          # 1 час = 3600 секунд
 EXAM_QUESTIONS = 45       # количество вопросов в экзамене
-EXAM_PASS_SCORE = 38      # порог сдачи
+EXAM_PASS_SCORE = 34      # порог сдачи
 
 stop_timer = False
 time_string = ""
