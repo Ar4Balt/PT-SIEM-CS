@@ -9,6 +9,7 @@ import urllib.request
 import urllib.error
 import hashlib
 import json
+import os
 from pathlib import Path
 
 # Файлы
@@ -35,6 +36,16 @@ FILES_TO_CHECK = [
 def md5(content: str) -> str:
     """Вычисляет md5-хэш строки"""
     return hashlib.md5(content.encode("utf-8")).hexdigest()
+
+def fetch_github_files(path=""):
+    """Возвращает список файлов и папок с GitHub API"""
+    url = GITHUB_API + path
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        print(f"⚠️ Не удалось получить список файлов {path}: {e}")
+        return []
 
 def download_file(url, local_path):
     """Скачивает файл с GitHub"""
@@ -103,9 +114,57 @@ def update_courses():
                     except Exception as e:
                         print(f"⚠️ Ошибка загрузки {url}: {e}")
 
+def sync_with_github(path=""):
+    """Синхронизирует локальные файлы с GitHub"""
+    items = fetch_github_files(path)
+    if not items:
+        return
+
+    remote_files = []
+    for item in items:
+        rel_path = os.path.join(path, item["name"])
+        local_path = Path(rel_path)
+
+        if item["type"] == "file":
+            remote_files.append(str(local_path))
+            # скачиваем/обновляем файл
+            try:
+                with urllib.request.urlopen(item["download_url"], timeout=5) as r:
+                    remote_content = r.read().decode("utf-8")
+                local_content = ""
+                if local_path.exists():
+                    with open(local_path, "r", encoding="utf-8") as f:
+                        local_content = f.read()
+                if md5(local_content) != md5(remote_content):
+                    download_file(item["download_url"], local_path)
+                else:
+                    print(f"✔️ Актуален: {local_path}")
+            except Exception as e:
+                print(f"⚠️ Ошибка проверки {rel_path}: {e}")
+
+        elif item["type"] == "dir":
+            # рекурсивно спускаемся в подпапку
+            sync_with_github(rel_path)
+            remote_files.append(str(local_path))
+
+    # удаляем лишние локальные файлы/папки
+    local_dir = Path(path) if path else Path(".")
+    if local_dir.exists():
+        for child in local_dir.iterdir():
+            if str(child) not in remote_files:
+                if child.is_file():
+                    child.unlink()
+                    print(f"🗑️ Удалён лишний файл: {child}")
+                elif child.is_dir():
+                    import shutil
+                    shutil.rmtree(child)
+                    print(f"🗑️ Удалена лишняя папка: {child}")
+
 def check_updates():
-    """Проверяем и обновляем все файлы проекта"""
+    """Главная функция синхронизации"""
     print("🔍 Проверка обновлений...")
+
+    sync_with_github("")    # синхронизируем всё с корня репозитория
 
     # основные файлы
     for file in FILES_TO_CHECK:
