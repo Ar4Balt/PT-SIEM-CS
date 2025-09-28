@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 
 # Файлы
 COURSES_DIR = "courses"
