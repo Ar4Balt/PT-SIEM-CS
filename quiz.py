@@ -159,7 +159,7 @@ def sync_with_github(path=""):
     local_dir = Path(path) if path else Path(".")
     if local_dir.exists():
         for child in local_dir.iterdir():
-            if child.name in IGNORE_PATHS:  # пропускаем игнорируемые папки
+            if child.name in IGNORE_PATHS:  # игнорируем служебные файлы/папки
                 continue
             if str(child) not in remote_files:
                 if child.is_file():
