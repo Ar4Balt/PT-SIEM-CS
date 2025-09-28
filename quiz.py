@@ -35,7 +35,8 @@ IGNORE_PATHS = {
     ".idea", ".vscode",          # IDE (PyCharm, VSCode)
     ".venv", "venv", "env",      # виртуальные окружения
     "__pycache__", ".mypy_cache", ".pytest_cache",  # кэши
-    ".DS_Store", "Thumbs.db"     # системные файлы (macOS, Windows)
+    ".DS_Store", "Thumbs.db",    # системные файлы (macOS, Windows)
+    "results.txt"                # результаты сдачи
 }
 
 FILES_TO_CHECK = [
