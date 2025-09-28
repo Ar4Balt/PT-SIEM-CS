@@ -36,7 +36,7 @@ IGNORE_PATHS = {
     ".venv", "venv", "env",      # виртуальные окружения
     "__pycache__", ".mypy_cache", ".pytest_cache",  # кэши
     ".DS_Store", "Thumbs.db",    # системные файлы (macOS, Windows)
-    "results.txt"                # результаты сдачи
+    "test.txt"                # результаты сдачи
 }
 
 FILES_TO_CHECK = [
