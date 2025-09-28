@@ -29,7 +29,14 @@ time_string = ""
 GITHUB_API = "https://api.github.com/repos/Ar4Balt/PT-SIEM-CS/contents/"
 GITHUB_RAW = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
 
-IGNORE_PATHS = {".git"}  # файлы/папки, которые никогда не трогаем
+# файлы/папки, которые никогда не трогаем
+IGNORE_PATHS = {
+    ".git", ".github",           # Git и GitHub
+    ".idea", ".vscode",          # IDE (PyCharm, VSCode)
+    ".venv", "venv", "env",      # виртуальные окружения
+    "__pycache__", ".mypy_cache", ".pytest_cache",  # кэши
+    ".DS_Store", "Thumbs.db"     # системные файлы (macOS, Windows)
+}
 
 FILES_TO_CHECK = [
     "quiz.py",
@@ -130,7 +137,6 @@ def sync_with_github(path=""):
 
         if item["type"] == "file":
             remote_files.append(str(local_path))
-            # скачиваем/обновляем файл
             try:
                 with urllib.request.urlopen(item["download_url"], timeout=5) as r:
                     remote_content = r.read().decode("utf-8")
@@ -146,7 +152,6 @@ def sync_with_github(path=""):
                 print(f"⚠️ Ошибка проверки {rel_path}: {e}")
 
         elif item["type"] == "dir":
-            # рекурсивно спускаемся в подпапку
             sync_with_github(rel_path)
             remote_files.append(str(local_path))
 
@@ -154,12 +159,13 @@ def sync_with_github(path=""):
     local_dir = Path(path) if path else Path(".")
     if local_dir.exists():
         for child in local_dir.iterdir():
+            if child.name in IGNORE_PATHS:  # пропускаем игнорируемые папки
+                continue
             if str(child) not in remote_files:
                 if child.is_file():
                     child.unlink()
                     print(f"🗑️ Удалён лишний файл: {child}")
                 elif child.is_dir():
-                    import shutil
                     shutil.rmtree(child)
                     print(f"🗑️ Удалена лишняя папка: {child}")
 
