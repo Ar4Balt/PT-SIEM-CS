@@ -29,6 +29,8 @@ time_string = ""
 GITHUB_API = "https://api.github.com/repos/Ar4Balt/PT-SIEM-CS/contents/"
 GITHUB_RAW = "https://raw.githubusercontent.com/Ar4Balt/PT-SIEM-CS/main/"
 
+IGNORE_PATHS = {".git"}  # файлы/папки, которые никогда не трогаем
+
 FILES_TO_CHECK = [
     "quiz.py",
     "README.md"
